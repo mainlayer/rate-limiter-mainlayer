@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException, Request, status
@@ -78,6 +79,8 @@ async def _apply_rate_limit(request: Request, caller_id: str) -> None:
 
 @app.middleware("http")
 async def add_rate_limit_headers(request: Request, call_next):
+    """Add rate limit headers to all responses."""
+    start_time = time.monotonic() if hasattr(time, 'monotonic') else 0
     response = await call_next(request)
     rl = getattr(request.state, "rate_limit", None)
     if rl:
@@ -86,6 +89,8 @@ async def add_rate_limit_headers(request: Request, call_next):
             response.headers["X-RateLimit-Remaining"] = str(rl.remaining_this_minute)
         if rl.requests_per_minute is not None:
             response.headers["X-RateLimit-Limit"] = str(rl.requests_per_minute)
+        if rl.retry_after_seconds is not None:
+            response.headers["Retry-After"] = str(int(rl.retry_after_seconds) + 1)
     return response
 
 
@@ -118,18 +123,30 @@ async def get_my_tier(
     x_caller_id: str = Header(..., description="Your Mainlayer identifier"),
 ) -> dict:
     """Check your subscription tier and current rate limit allowance."""
-    result = await _limiter.check(x_caller_id)
-    # Reset the check so it doesn't count against quota
-    _limiter.reset(x_caller_id)
-    tier_obj = get_tier(result.tier)
-    return {
-        "identifier": x_caller_id,
-        "tier": result.tier,
-        "description": tier_obj.description,
-        "requests_per_minute": result.requests_per_minute,
-        "requests_per_day": tier_obj.requests_per_day,
-        "upgrade_url": "https://mainlayer.fr" if result.tier == "free" else None,
-    }
+    try:
+        # Peek at tier without consuming a request
+        tier = await _limiter.get_tier(x_caller_id)
+        tier_obj = get_tier(tier.name)
+        return {
+            "identifier": x_caller_id,
+            "tier": tier.name,
+            "description": tier.description,
+            "requests_per_minute": tier.requests_per_minute,
+            "requests_per_day": tier.requests_per_day,
+            "upgrade_url": "https://mainlayer.fr" if tier.name == "free" else None,
+        }
+    except Exception as e:
+        logger.error(f"Error checking tier for {x_caller_id}: {e}")
+        # Return FREE tier on error
+        return {
+            "identifier": x_caller_id,
+            "tier": "free",
+            "description": FREE.description,
+            "requests_per_minute": FREE.requests_per_minute,
+            "requests_per_day": FREE.requests_per_day,
+            "upgrade_url": "https://mainlayer.fr",
+            "note": "Using free tier due to temporary lookup error",
+        }
 
 
 @app.get("/api/data", tags=["api"])
