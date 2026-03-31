@@ -150,7 +150,7 @@ describe('MainlayerRateLimiter.checkAndConsume', () => {
     await limiter.checkAndConsume('wallet_xyz');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.mainlayer.xyz/v1/entitlements/consume',
+      'https://api.mainlayer.fr/v1/entitlements/consume',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
@@ -201,7 +201,7 @@ describe('MainlayerRateLimiter.peek', () => {
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(42);
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.mainlayer.xyz/v1/entitlements/check',
+      'https://api.mainlayer.fr/v1/entitlements/check',
       expect.anything()
     );
   });

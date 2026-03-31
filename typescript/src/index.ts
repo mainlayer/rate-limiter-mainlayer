@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 
-const MAINLAYER_API_BASE = 'https://api.mainlayer.xyz';
+const MAINLAYER_API_BASE = 'https://api.mainlayer.fr';
 
 export interface RateLimiterConfig {
   apiKey: string;
   resourceId: string;
   /**
    * Custom error message returned to clients when rate limit is exceeded.
-   * Defaults to "Rate limit exceeded. Purchase more credits at mainlayer.xyz"
+   * Defaults to "Rate limit exceeded. Purchase more credits at mainlayer.fr"
    */
   limitExceededMessage?: string;
 }
@@ -59,7 +59,7 @@ export class MainlayerRateLimiter {
     this.resourceId = config.resourceId;
     this.limitExceededMessage =
       config.limitExceededMessage ??
-      'Rate limit exceeded. Purchase more credits at mainlayer.xyz';
+      'Rate limit exceeded. Purchase more credits at mainlayer.fr';
   }
 
   /**
@@ -246,7 +246,7 @@ export function rateLimit(options: RateLimitOptions): RequestHandler {
           error: 'rate_limit_exceeded',
           message:
             options.limitExceededMessage ??
-            'Rate limit exceeded. Purchase more credits at mainlayer.xyz',
+            'Rate limit exceeded. Purchase more credits at mainlayer.fr',
           remaining: result.remaining,
           resetAt: result.resetAt?.toISOString(),
         });

@@ -24,7 +24,7 @@ from .tiers import FREE, Tier, get_tier
 
 logger = logging.getLogger(__name__)
 
-MAINLAYER_BASE_URL = os.getenv("MAINLAYER_BASE_URL", "https://api.mainlayer.xyz")
+MAINLAYER_BASE_URL = os.getenv("MAINLAYER_BASE_URL", "https://api.mainlayer.fr")
 _TIER_CACHE_TTL = 60.0  # seconds
 
 
